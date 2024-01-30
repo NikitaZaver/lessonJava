@@ -1,4 +1,5 @@
 import java.util.Scanner;
+
 public class Average {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -25,7 +26,7 @@ public class Average {
                 quantity1++;
                 sum1 += j;
             }
-    }
+        }
         System.out.println("Среднее арифметическое чётных чисел: " + (double) sum1 / quantity1);
-}
+    }
 }
