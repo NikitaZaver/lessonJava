@@ -2,15 +2,15 @@ public class Loop {
     public static void main(String[] args) {
 
         for (int i = 100; i >= 1; i--) {
-            int Multiplicity = getMultiplicity(i);
-            if (Multiplicity == 0) {
+            boolean multiplicity = getMultiplicity(i);
+            if (multiplicity) {
                 System.out.print(i);
             }
         }
     }
 
-    public static int getMultiplicity(int i) {
-        return i % 4;
+    public static boolean getMultiplicity(int i) {
+        return i % 4 == 0;
 
     }
 }
