@@ -16,11 +16,11 @@ public class Numbers {
             if (i % 2 != 0) {
                 sumNotEven += i % 10;
             }
-            if (maxNumber < (i % 10)){
+            if (maxNumber < (i % 10)) {
                 maxNumber = i % 10;
             }
         }
-        System.out.println("Сумма всех цифр = "+ sum);
+        System.out.println("Сумма всех цифр = " + sum);
         System.out.println("Сумма всех нечётных цифр = " + sumNotEven);
         System.out.println("Максимальная цифра = " + maxNumber);
     }
