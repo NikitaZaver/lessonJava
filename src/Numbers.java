@@ -11,7 +11,7 @@ public class Numbers {
         System.out.print("Введите целое число: ");
         int number = scanner.nextInt();
 
-        for (int i = number; i != 0; i /= 10) {
+        for (int i = Math.abs(number); i != 0; i /= 10) {
             sum += i % 10;
             if (i % 2 != 0) {
                 sumNotEven += i % 10;
@@ -20,7 +20,7 @@ public class Numbers {
                 maxNumber = i % 10;
             }
         }
-        System.out.println("Сумма всех цифр = " + sum);
+        System.out.println("Сумма всех цифр = "+ sum);
         System.out.println("Сумма всех нечётных цифр = " + sumNotEven);
         System.out.println("Максимальная цифра = " + maxNumber);
     }
