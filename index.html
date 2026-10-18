@@ -301,6 +301,12 @@ function tickCheck(){
 
 /* ---------- Анимация вращения (easing) ----------
    spinTo(targetAngle, durationMs, onDone) — плавный разгон и торможение */
+/* постоянный цикл отрисовки — чтобы вращение было видно */
+(function renderLoop(){
+  drawWheel();
+  requestAnimationFrame(renderLoop);
+})();
+
 function spinTo(targetAngle, durationMs, onDone){
   spinning = true;
   const start = angle, delta = targetAngle - start, t0 = performance.now();
