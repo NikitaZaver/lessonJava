@@ -1,0 +1,17 @@
+/* Оптимизация блюра для мобилок — уменьшаем blur, чтобы не лагало при скролле */
+@media (max-width: 768px) {
+  .glass {
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+  }
+  .card {
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+  }
+  #wheelCanvas {
+    filter: none !important;
+  }
+  .pointer {
+    filter: none !important;
+  }
+}

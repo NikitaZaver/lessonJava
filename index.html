@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="stylesheet" href="style.css">
 <title>🎡 Рулетка Судьбы</title>
 <style>
 :root{ --bg1:#0f0c29; --bg2:#302b63; --bg3:#24243e;
@@ -38,8 +39,9 @@ input::placeholder{color:rgba(255,255,255,.45)}
 .clear-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#aaa;font-size:1.2rem;cursor:pointer;padding:6px}
 .err-msg{color:#ff8fa3;font-size:.8rem;margin-top:6px;min-height:1em;transition:opacity .3s}
 .wheel-zone{position:relative;display:flex;justify-content:center;margin-top:4px}
-#wheelCanvas{width:min(94vw,430px);height:min(94vw,430px);filter:drop-shadow(0 0 30px rgba(0,234,255,.35));transition:filter .4s}
-#wheelCanvas.spinning{filter:drop-shadow(0 0 45px rgba(255,47,214,.55))}
+#wheelCanvas{width:min(94vw,430px);height:min(94vw,430px)}
+#wheelCanvas.spinning{box-shadow:0 0 45px rgba(255,47,214,.55), 0 0 80px rgba(0,234,255,.25)}
+#wheelZone{will-change:transform}
 .pointer{ position:absolute;top:-6px;left:50%;transform:translateX(-50%);z-index:5;
   font-size:2.4rem;color:var(--neon3);filter:drop-shadow(0 0 10px rgba(255,225,77,.8)); }
 .pointer.bump{animation:bump .12s}
@@ -233,9 +235,10 @@ function esc(s){ const d=document.createElement('div'); d.textContent=s; return 
 /* ---------- Фоновые частицы ---------- */
 const bgC = document.getElementById('bg-particles'), bgX = bgC.getContext('2d');
 let particles = [];
+function isMobile(){ return Math.min(innerWidth, innerHeight) < 768 || /Android|iPhone/i.test(navigator.userAgent); }
 function resizeBg(){
   bgC.width = innerWidth; bgC.height = innerHeight;
-  const n = Math.min(60, Math.floor(innerWidth*innerHeight/18000));
+  const n = isMobile() ? 22 : Math.min(60, Math.floor(innerWidth*innerHeight/18000));
   particles = Array.from({length:n}, () => ({
     x:Math.random()*bgC.width, y:Math.random()*bgC.height,
     r:Math.random()*2.2+.6, s:Math.random()*.5+.15,
@@ -243,14 +246,25 @@ function resizeBg(){
   }));
 }
 addEventListener('resize', resizeBg); resizeBg();
+/* пауза фоновой анимации при скролле и в фоне — главный фикс лагов на мобилках */
+let bgPaused = false, bgIdleTimer = null;
+function pauseBg(){ bgPaused = true; clearTimeout(bgIdleTimer); }
+function resumeBgSoon(){ clearTimeout(bgIdleTimer); bgIdleTimer = setTimeout(()=>{ bgPaused = false; }, 350); }
+addEventListener('scroll', pauseBg, {passive:true});
+addEventListener('touchmove', pauseBg, {passive:true});
+addEventListener('touchend', resumeBgSoon, {passive:true});
+addEventListener('wheel', pauseBg, {passive:true});
+document.addEventListener('visibilitychange', ()=>{ bgPaused = document.hidden; });
 (function bgLoop(){
-  bgX.clearRect(0,0,bgC.width,bgC.height);
-  for(const p of particles){
-    p.y -= p.s; p.tw += .04;
-    if(p.y < -5){ p.y = bgC.height+5; p.x = Math.random()*bgC.width; }
-    const a = .25 + .25*Math.sin(p.tw);
-    bgX.beginPath(); bgX.arc(p.x,p.y,p.r,0,7);
-    bgX.fillStyle = 'hsla('+p.hue+',100%,65%,'+a+')'; bgX.fill();
+  if(!bgPaused){
+    bgX.clearRect(0,0,bgC.width,bgC.height);
+    for(const p of particles){
+      p.y -= p.s; p.tw += .04;
+      if(p.y < -5){ p.y = bgC.height+5; p.x = Math.random()*bgC.width; }
+      const a = .25 + .25*Math.sin(p.tw);
+      bgX.beginPath(); bgX.arc(p.x,p.y,p.r,0,7);
+      bgX.fillStyle = 'hsla('+p.hue+',100%,65%,'+a+')'; bgX.fill();
+    }
   }
   requestAnimationFrame(bgLoop);
 })();
