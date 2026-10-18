@@ -44,6 +44,29 @@ input::placeholder{color:rgba(255,255,255,.45)}
   font-size:2.4rem;color:var(--neon3);filter:drop-shadow(0 0 10px rgba(255,225,77,.8)); }
 .pointer.bump{animation:bump .12s}
 @keyframes bump{50%{transform:translateX(-50%) scale(1.25) rotate(-8deg)}}
+.go-btn{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:92px;height:92px;border-radius:50%;z-index:10;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;font-weight:900;letter-spacing:2px;color:#1a1a2e;
+  background:radial-gradient(circle at 32% 28%, #ffffff, #b4bfce 68%, #7e899d);
+  box-shadow:0 0 0 6px rgba(255,255,255,.18), 0 0 22px rgba(0,234,255,.55), 0 8px 22px rgba(0,0,0,.55);
+  animation:goPulse 1.6s ease-in-out infinite;
+  transition:transform .12s;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+}
+.go-btn:active{transform:translate(-50%,-50%) scale(.88)}
+.go-btn.spinning{animation:goSpin .7s linear infinite}
+@keyframes goPulse{
+  0%,100%{box-shadow:0 0 0 6px rgba(255,255,255,.18),0 0 22px rgba(0,234,255,.5),0 8px 22px rgba(0,0,0,.55);transform:translate(-50%,-50%) scale(1)}
+  50%{box-shadow:0 0 0 12px rgba(255,255,255,.08),0 0 50px rgba(255,47,214,.75),0 8px 22px rgba(0,0,0,.55);transform:translate(-50%,-50%) scale(1.1)}
+}
+@keyframes goSpin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.hint{text-align:center;font-size:.92rem;opacity:.75;margin-top:12px;animation:hintPulse 2s ease infinite}
+.hint b{color:var(--neon3)}
+@keyframes hintPulse{50%{opacity:.4}}
+.modal .share-title{font-size:.9rem;opacity:.9;margin:18px 0 8px;font-weight:600;line-height:1.4}
+.modal .modal-share-row input{margin-bottom:8px;font-size:.78rem;padding:10px 12px;background:rgba(0,0,0,.4)}
 .spin-btn{ margin-top:14px;width:100%;padding:18px;border:none;border-radius:16px;cursor:pointer;
   font-size:1.3rem;font-weight:800;letter-spacing:1px;color:#1a1a2e;
   background:linear-gradient(90deg,var(--neon3),var(--neon1),var(--neon2),var(--neon3));
@@ -134,7 +157,9 @@ input::placeholder{color:rgba(255,255,255,.45)}
     <div class="wheel-zone">
       <div class="pointer" id="pointer">▼</div>
       <canvas id="wheelCanvas"></canvas>
+      <div class="go-btn" id="goBtn">GO</div>
     </div>
+    <p class="hint" id="goHint">💡 Нажмите на большую кнопку <b>GO</b> в центре рулетки!</p>
 
     <button class="spin-btn" id="spinBtn">🎰 КРУТИТЬ!</button>
     <div class="result" id="result"></div>
@@ -182,7 +207,12 @@ input::placeholder{color:rgba(255,255,255,.45)}
     <div style="font-size:3rem">🎉</div>
     <h2 id="winnerAction" style="font-size:1rem;opacity:.8;white-space:pre-wrap"></h2>
     <div class="winner-name" id="winnerName"></div>
-    <button class="btn" id="winnerOk">Отлично!</button>
+    <p class="share-title">📩 Отправь ссылку другу и порадуй его!</p>
+    <div class="modal-share-row">
+      <input type="text" id="modalShareLink" readonly>
+    </div>
+    <button class="btn secondary" id="modalCopyBtn">📋 Копировать</button>
+    <button class="btn" id="winnerOk" style="margin-top:12px">Отлично!</button>
   </div>
 </div>
 
@@ -300,12 +330,8 @@ function drawWheel(){
     ctx.shadowBlur=0;
     ctx.restore();
   }
-  ctx.beginPath(); ctx.arc(CX,CY,58,0,7);
-  const cg = ctx.createRadialGradient(CX-14,CY-14,6,CX,CY,58);
-  cg.addColorStop(0,'#fff'); cg.addColorStop(1,'#8899aa');
-  ctx.fillStyle = cg; ctx.shadowColor='#fff'; ctx.shadowBlur=16; ctx.fill(); ctx.shadowBlur=0;
-  ctx.fillStyle='#1a1a2e'; ctx.font='bold 30px Segoe UI'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText('GO',CX,CY+1);
+  ctx.beginPath(); ctx.arc(CX,CY,70,0,7);
+  ctx.fillStyle='rgba(0,0,0,.18)'; ctx.fill(); // тень-углубление под кнопкой GO (кнопка — DOM-элемент)
 }
 
 const pointer = document.getElementById('pointer');
@@ -332,6 +358,8 @@ function tickCheck(){
 function spinTo(targetAngle, durationMs, onDone){
   spinning = true;
   canvas.classList.add('spinning');
+  const goBtn = document.getElementById('goBtn');
+  if(goBtn) goBtn.classList.add('spinning');
   const start = angle, delta = targetAngle - start, t0 = performance.now();
   function ease(t){ return 1 - Math.pow(1-t, 3.2); } // ease-out cubic-ish
   function frame(now){
@@ -339,7 +367,7 @@ function spinTo(targetAngle, durationMs, onDone){
     angle = start + delta * ease(t);
     tickCheck();
     if(t < 1) requestAnimationFrame(frame);
-    else { angle = targetAngle; spinning = false; canvas.classList.remove('spinning'); onDone(); }
+    else { angle = targetAngle; spinning = false; canvas.classList.remove('spinning'); if(goBtn) goBtn.classList.remove('spinning'); onDone(); }
   }
   requestAnimationFrame(frame);
 }
@@ -351,6 +379,14 @@ function showWinner(action, winner, idx){
   document.getElementById('result').classList.add('show');
   document.getElementById('winnerAction').textContent = '«'+action+'» выполняет:';
   document.getElementById('winnerName').textContent = winner;
+  // генерируем компактную ссылку-реплей: action|idx|names
+  try{
+    const payload = btoa(unescape(encodeURIComponent(action + '|' + idx + '|' + names.join(','))));
+    const link = location.origin + location.pathname + '#r=' + payload;
+    document.getElementById('modalShareLink').value = link;
+    const sl = document.getElementById('shareLink');
+    if(sl) sl.value = link;
+  }catch(e){}
   document.getElementById('winnerOverlay').classList.add('open');
 }
 
@@ -405,6 +441,13 @@ document.getElementById('clearAction').addEventListener('click', ()=>{
   actionInput.value=''; actionError.textContent=''; actionInput.focus();
 });
 
+/* ---------- Кнопка GO в центре рулетки (крупная, кликабельная) ---------- */
+document.getElementById('goBtn').addEventListener('click', ()=>{
+  const hint = document.getElementById('goHint');
+  if(hint) hint.style.display='none';
+  spinBtn.click();
+});
+
 spinBtn.addEventListener('click', ()=>{
   if(spinning) return;
   const action = validateAction(true);
@@ -428,10 +471,12 @@ spinBtn.addEventListener('click', ()=>{
     addHistory(winner);
     showWinner(action, winner, idx);
     spinBtn.disabled = false;
-    // ссылка-реплей
-    const payload = btoa(unescape(encodeURIComponent(JSON.stringify({a:action, w:idx, n:names}))));
+    // ссылка-реплей (компактный формат: action|idx|имена через запятую)
+    const compact = [action, idx, names.join(',')].join('|');
+    const payload = btoa(unescape(encodeURIComponent(compact)));
     const link = location.origin + location.pathname + '#r=' + payload;
     document.getElementById('shareLink').value = link;
+    document.getElementById('modalShareLink').value = link;
     document.getElementById('shareBox').classList.remove('show');
     shareBtn.style.display = 'block';
   });
@@ -455,11 +500,13 @@ document.getElementById('copyLink').addEventListener('click', function(){
 function tryReplay(){
   const m = location.hash.match(/^#r=(.+)$/);
   if(!m) return;
-  let data;
-  try{ data = JSON.parse(decodeURIComponent(escape(atob(m[1])))); }catch(e){ return; }
-  if(!data || !data.n || !data.n.length || typeof data.w !== 'number' || !data.a) return;
-  names = data.n.slice(0,16);
-  const action = String(data.a).slice(0,80), idx = data.w % names.length;
+  let parts;
+  try{ parts = decodeURIComponent(escape(atob(m[1]))).split('|'); }catch(e){ return; }
+  if(!parts || parts.length < 3) return;
+  const action = parts[0], idx = parseInt(parts[1], 10);
+  const namesList = parts[2].split(',').filter(Boolean);
+  if(!action || isNaN(idx) || !namesList.length) return;
+  names = namesList.slice(0,16);
   // прячем ненужное, показываем режим реплея
   document.querySelector('.card').style.display='none';
   spinBtn.style.display='none';
@@ -570,6 +617,25 @@ document.getElementById('newNameInput').addEventListener('keydown',e=>{ if(e.key
 
 document.getElementById('winnerOk').addEventListener('click',()=>{
   document.getElementById('winnerOverlay').classList.remove('open');
+});
+
+/* Копирование ссылки-реплея из модалки победителя */
+document.getElementById('modalCopyBtn').addEventListener('click', function(){
+  const inp = document.getElementById('modalShareLink');
+  const btn = this;
+  const done = ()=>{
+    btn.textContent = '✅ Скопировано!';
+    setTimeout(()=>{ btn.textContent = '📋 Копировать'; }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(inp.value).then(done).catch(()=>{
+      inp.select(); inp.setSelectionRange(0, 9999);
+      document.execCommand('copy'); done();
+    });
+  } else {
+    inp.select(); inp.setSelectionRange(0, 9999);
+    document.execCommand('copy'); done();
+  }
 });
 
 drawWheel();
