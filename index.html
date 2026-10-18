@@ -418,8 +418,12 @@ spinBtn.addEventListener('click', ()=>{
   const idx = Math.floor(Math.random()*n);
   const phi = seg*(0.15 + Math.random()*0.7);
   const turns = 4 + Math.floor(Math.random()*3);
-  const target = -Math.PI/2 - idx*seg - phi + turns*Math.PI*2 - angle;
-  spinTo(angle + target, 4200 + turns*300, ()=>{
+  const twoPi = Math.PI*2;
+  const rawTarget = -Math.PI/2 - idx*seg - phi;
+  const normTarget = ((rawTarget % twoPi) + twoPi) % twoPi;
+  const k = Math.ceil(turns + (angle - normTarget) / twoPi);
+  const finalTarget = normTarget + k * twoPi;
+  spinTo(finalTarget, 4200 + turns*300, ()=>{
     const winner = names[idx];
     addHistory(winner);
     showWinner(action, winner, idx);
@@ -465,8 +469,12 @@ function tryReplay(){
     const n = names.length, seg = (Math.PI*2)/n;
     const phi = seg*(0.3 + Math.random()*0.4);
     const turns = 4;
-    const target = -Math.PI/2 - idx*seg - phi + turns*Math.PI*2 - angle;
-    spinTo(angle + target, 4600, ()=>{
+    const twoPi = Math.PI*2;
+    const rawTarget = -Math.PI/2 - idx*seg - phi;
+    const normTarget = ((rawTarget % twoPi) + twoPi) % twoPi;
+    const k = Math.ceil(turns + (angle - normTarget) / twoPi);
+    const finalTarget = normTarget + k * twoPi;
+    spinTo(finalTarget, 4600, ()=>{
       showWinner(action, names[idx], idx);
       document.getElementById('historyCard').style.display='none';
       // кнопка играть самому
